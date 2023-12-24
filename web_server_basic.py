@@ -1,16 +1,19 @@
+# Uses WIFI_CONFIG.py stored on Pico
+
 # The basic web server listends on port 80
 # and serves a simple web page showing onboard
 # temperature sensor reading and two buttons
 # which control the onboar LED
 
+import WIFI_CONFIG
 import network
 import socket
 from time import sleep
 from picozero import pico_temp_sensor, pico_led
 import machine
 
-ssid = ''
-password = ''
+ssid = WIFI_CONFIG.SSID
+password = WIFI_CONFIG.PSK
 
 def connect():
     #Connect to WLAN
