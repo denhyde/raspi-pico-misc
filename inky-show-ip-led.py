@@ -1,4 +1,4 @@
-# Uses WIFI_CONFIG.py and network_manager.py
+# Uses WIFI_CONFIG.py
 # stored on Pico
 
 # Example Led on/ Led off program from raspberry pi foundation for Pico W that has been updated to show ip address on inky pack
