@@ -1,0 +1,126 @@
+// Save it in an SL object.
+// Each time the object is rezzed, or sim server restarted,
+// or script saved/reset, a new objet URL will be generated
+// which needs to be updated in the Raspberry Pi Pico W script.
+
+string url;
+key urlRequestId;
+
+default
+{
+    state_entry()
+    {
+        urlRequestId = llRequestURL(); // Requests a public URL for this object
+    }
+
+    http_request(key request_id, string method, string body)
+    {
+        list params;
+        string param;
+        string rKey;
+        string rVal;
+        
+        //if (request_id == urlRequestId)
+        //{
+            if (method == URL_REQUEST_DENIED)
+            {
+                llOwnerSay("The following error occurred while attempting to get a free URL for this device:\n\n" + body);
+            }
+            else if (method == URL_REQUEST_GRANTED)
+            {
+                url = body;
+                llOwnerSay("My URL: " + url);
+                // display a popup:
+                //llLoadURL(llGetOwner(), "Click to visit my URL!", url);
+            }
+            else if (method == "GET")
+            {
+                string response = "ERROR";
+                
+                //llOwnerSay("Received a request on " + llGetDate());
+                
+                if(llGetHTTPHeader(request_id, "x-query-string") != "")
+                {
+                    // non-empty GET query string
+                    string query_string = llGetHTTPHeader(request_id, "x-query-string"); // Extract the query part after the ?
+                    
+                    //llOwnerSay("Query string: " + query_string);
+
+                    // Split key-value pairs by '&'
+                    list params = llParseString2List(query_string, ["&"], []);
+
+                    // Iterate through each key-value pair
+                    integer i;
+                    for (i = 0; i < llGetListLength(params); ++i)
+                    {
+                        param = llList2String(params, i);
+                
+                        // Split key and value by '='
+                        list keyValue = llParseString2List(param, ["="], []);
+                
+                        // Check if it's a valid key-value pair
+                        if (llGetListLength(keyValue) == 2)
+                        {
+                            rKey = llList2String(keyValue, 0);
+                            rVal = llList2String(keyValue, 1);
+
+                            if(rKey == "button")
+                            {
+                                if(rVal == "A" || rVal == "B" || rVal == "C")
+                                {
+                                    string textureUUID = "a087d23e-c98d-75e8-4a05-a2c17fce3c83";    // no way (red)
+                                    if(rVal == "A")
+                                    {
+                                        textureUUID = "1d79af7e-35c8-4162-489d-c49adbc076e0";   // 1
+                                    }
+                                    else if(rVal == "B")
+                                    {
+                                        textureUUID = "08de96c7-c762-4baa-a2d3-36a6418aab5c";   // 2
+                                    }
+                                    else if(rVal == "C")
+                                    {
+                                        textureUUID = "03b7bd84-3ffd-0d90-d3dc-0e8207c763fb";   // 3
+                                    }
+                                    
+                                    llSetTexture(textureUUID, ALL_SIDES);
+                                    
+                                    response = rVal;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            response = "ERROR: Invalid parameter format: " + param;
+                        }
+                    }
+                }
+        
+                llHTTPResponse(request_id, 200, response);
+            }
+            else
+            {
+                llHTTPResponse(request_id, 405, "Method Not Allowed");
+            }
+        
+        //}
+        
+        llSleep(1.0);   // to prevent http request throttling by LL
+    }
+
+    on_rez(integer start_param)
+    {
+        llResetScript(); // Resets the script when rezzed again
+    }
+    
+    changed(integer change)
+    {
+        if (change & (CHANGED_OWNER | CHANGED_INVENTORY))
+        {
+            llResetScript();
+        }
+        if (change & (CHANGED_REGION | CHANGED_REGION_START | CHANGED_TELEPORT))
+        {
+            urlRequestId = llRequestURL(); // Re-request URL if the object is moved to another region
+        }
+    }
+}
